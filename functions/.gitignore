@@ -1,2 +1,11 @@
 node_modules/
 *.local
+
+# Pastas e arquivos de build/dependencias
+[cite_start]node_modules/ [cite: 1]
+.firebase/
+
+# Arquivos de configurações locais e secretos
+*.local
+.env*
+.env.centelha-e931b

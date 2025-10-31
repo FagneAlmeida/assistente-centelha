@@ -3,13 +3,13 @@ function startApp() {
     const db = firebase.firestore();
     const { serverTimestamp } = firebase.firestore.FieldValue;
     
-    const config = {
-        whatsappNumber: "5567999271603",
-        backendApiUrl: "https://callgemini-g3vol52jhq-uc.a.run.app",
-        officeAddress: "Av. Fabio Zahran, 6628, Vila Carvalho, Campo Grande-MS",
-        googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Oficina+FG+Motos+Av.+Fabio+Zahran+6628"
-    };
-    
+const config = {
+    whatsappNumber: "5567999271603",
+    // MUDANÇA AQUI: URL atualizada para o Firebase Functions
+    backendApiUrl: "https://us-central1-oficina-fg-motos.cloudfunctions.net/callGemini",
+    officeAddress: "Av. Fabio Zahran, 6628, Vila Carvalho, Campo Grande-MS",
+    googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Oficina+FG+Motos+Av.+Fabio+Zahran+6628"
+};    
     const systemPrompt = `Você é a Centelha, uma assistente virtual especialista em motocicletas da "Oficina FG Motos". Sua personalidade é amigável, técnica e eficiente. Seu objetivo é coletar NOME, MODELO DA MOTO e o PROBLEMA. RESPONDA SEMPRE EM FORMATO JSON VÁLIDO com a seguinte estrutura: {"responseText": "Sua resposta conversacional para o usuário.", "conversationState": "STATE", "extractedData": { "name": "...", "moto": "...", "problem": "..." }, "quickReplies": ["Opção 1", "Opção 2"]}. REGRAS: 1. 'conversationState': Mude o estado: ASKING_FOR_DATA, READY_FOR_DIAGNOSIS, GENERAL_QUESTION, PROVIDING_LOCATION. 2. 'extractedData': Preencha com os dados da MENSAGEM MAIS RECENTE. Se o usuário disser "Meu nome é [NOME]", extraia APENAS o [NOME] para o campo "name". Se o usuário disser apenas um nome, use-o diretamente. Mantenha os dados já coletados. 3. 'quickReplies': Ofereça sugestões ÚTEIS. 4. 'responseText': Seja claro. Peça um dado de cada vez. 5. NUNCA use markdown. 6. Se o usuário perguntar o endereço, responda com as informações da oficina, use o conversationState "PROVIDING_LOCATION" e na responseText inclua o texto: "Nosso endereço é: ${config.officeAddress}. [BUTTON:Ver no Mapa|${config.googleMapsUrl}]". 7. Fale exclusivamente em Português do Brasil. INFORMAÇÕES DA OFICINA: WhatsApp: ${config.whatsappNumber}. Horário: Segunda a Sexta, das 8h às 18h.`;
 
     const elements = {
