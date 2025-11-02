@@ -1,11 +1,12 @@
 function startApp() {
+    // Inicialização do Firebase (assumindo que as SDKs estão carregadas no index.html)
     const auth = firebase.auth();
     const db = firebase.firestore();
     const { serverTimestamp } = firebase.firestore.FieldValue;
     
 const config = {
     whatsappNumber: "5567999271603",
-    // MUDANÇA AQUI: URL atualizada para o Firebase Functions
+    // CORREÇÃO APLICADA: URL atualizada para o Firebase Functions do projeto 'oficina-fg-motos'
     backendApiUrl: "https://us-central1-oficina-fg-motos.cloudfunctions.net/callGemini",
     officeAddress: "Av. Fabio Zahran, 6628, Vila Carvalho, Campo Grande-MS",
     googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=Oficina+FG+Motos+Av.+Fabio+Zahran+6628"
@@ -61,8 +62,7 @@ const config = {
             .replace(buttonRegex, (match, buttonText, url) => {
                 const safeUrl = url.trim();
                 if (safeUrl.startsWith('https://') || safeUrl.startsWith('http://')) {
-                    // CORREÇÃO: Removido encodeURI() daqui. A URL já vem corretamente codificada
-                    // da função generateWhatsAppLink(). Aplicar a codificação novamente causava o problema de "double encoding".
+                    // Aqui a URL já vem corretamente codificada da função generateWhatsAppLink().
                     return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="chat-action-button bg-gradient-to-br from-yellow-400 to-orange-500 text-white">${buttonText}</a>`;
                 }
                 console.warn('Attempt to render button with invalid URL was blocked:', safeUrl);
@@ -205,6 +205,9 @@ const config = {
 
         const idTokenValue = await auth.currentUser.getIdToken();
 
+        // ------------------
+        // CHAMADA AO BACKEND
+        // ------------------
         const response = await fetch(config.backendApiUrl, {
             method: 'POST',
             headers: { 
@@ -351,10 +354,15 @@ const config = {
             } else {
                 console.log("Nenhum usuário logado. Tentando login anônimo...");
                 try {
-                    await auth.signInAnonymously();
-                    console.log("Login anônimo solicitado. Aguardando confirmação...");
+                    // Tenta fazer login com o token inicial se estiver disponível
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await auth.signInWithCustomToken(__initial_auth_token);
+                    } else {
+                        await auth.signInAnonymously();
+                    }
+                    console.log("Login solicitado. Aguardando confirmação...");
                 } catch (error) {
-                    console.error("Falha crítica ao tentar login anônimo:", error);
+                    console.error("Falha crítica ao tentar login:", error);
                     addMessageToUI('assistant', 'Não foi possível iniciar uma sessão segura. Verifique sua conexão e recarregue a página.', 'err-auth');
                 }
             }
