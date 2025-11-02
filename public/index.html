@@ -5,16 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centelha - Assistente da Oficina FG Motos</title>
     <!--
-        CORREÇÃO APLICADA: Substituída a CSP.
-        Atenção: Esta CSP pode estar faltando o domínio HTTPS de dados do Firestore (https://*.cloud.firestore.googleapis.com),
-        mas inclui as regras essenciais para WebSockets (wss://*.firebaseio.com) e autenticação.
+        CORREÇÃO FINAL APLICADA: Incluída a CSP mais robusta para Firebase/Firestore (adicionando *.cloud.firestore.googleapis.com)
+        e a diretiva img-src para evitar o bloqueio de imagens/GIFs do Google.
     -->
     <meta http-equiv="Content-Security-Policy" 
         content="default-src 'self' https://www.gstatic.com; 
              script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; 
              style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
              font-src 'self' https://fonts.gstatic.com;
-             connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://us-central1-oficina-fg-motos.cloudfunctions.net https://www.googleapis.com https://www.gstatic.com https://unpkg.com;
+             img-src 'self' https://www.gstatic.com https://www.google.com;
+             connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.cloud.firestore.googleapis.com https://us-central1-oficina-fg-motos.cloudfunctions.net https://www.googleapis.com https://www.gstatic.com https://unpkg.com;
              frame-src 'self';
              object-src 'none';
              base-uri 'self';">
