@@ -112,18 +112,41 @@
         </div>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.6.8/firebase-firestore.js"></script>
+    <!-- Firebase SDKs (Compatível com v8.10.0) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
     
-    <!-- Script do aplicativo -->
+    <!-- Script de Configuração e Inicialização do Firebase (CORRIGIDO) -->
     <script>
-        // Foi removida a inicialização manual do Firebase daqui, pois o ambiente Canvas já a trata.
-        // As variáveis globais __firebase_config e __initial_auth_token agora são apenas referenciadas
-        // dentro do app.js.
+        // CORREÇÃO: Inicialização manual do Firebase App, necessária para o deploy no Netlify.
+        // *** IMPORTANTE: VOCÊ DEVE SUBSTITUIR AS CHAVES ABAIXO PELAS DE SEU PROJETO 'oficina-fg-motos' ***
+        const firebaseConfig = {
+            apiKey: "SEU_API_KEY_PUBLICO", 
+            authDomain: "SEU_AUTH_DOMAIN",
+            projectId: "oficina-fg-motos", // Exemplo, confirme o seu ID real
+            storageBucket: "SEU_STORAGE_BUCKET",
+            messagingSenderId: "SEU_MESSAGING_SENDER_ID",
+            appId: "SEU_APP_ID"
+        };
+        
+        // Verifica se a configuração é válida antes de inicializar
+        if (firebaseConfig.apiKey && firebaseConfig.projectId !== "SEU_PROJECT_ID") {
+            firebase.initializeApp(firebaseConfig);
+        } else if (typeof __firebase_config !== 'undefined') {
+             // Fallback para inicialização do ambiente Canvas (se houver)
+             try {
+                const config = JSON.parse(__firebase_config);
+                firebase.initializeApp(config);
+             } catch(e) {
+                console.error("Firebase Config global não pôde ser analisada.");
+             }
+        } else {
+            console.error("ERRO: O Firebase não foi inicializado. Por favor, preencha o firebaseConfig com suas chaves públicas.");
+        }
     </script>
-    <!-- CORREÇÃO APLICADA: O caminho para o script foi corrigido de "app.js" para "js/app.js" -->
+    
+    <!-- Script principal do aplicativo (Caminho corrigido) -->
     <script src="js/app.js"></script>
 </body>
 </html>
