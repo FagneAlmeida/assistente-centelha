@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Centelha - Assistente da Oficina FG Motos</title>
     <!--
-        CORREÇÃO FINAL APLICADA: Incluído explicitamente 'https://www.googleapis.com' no 'connect-src'
-        para permitir a comunicação do Firebase Authentication, resolvendo o último bloqueio.
+        CORREÇÃO FINAL APLICADA: Incluído todas as conexões (Auth, Functions, Firestore HTTPS/WSS) no 'connect-src'
+        para resolver todos os bloqueios de segurança do navegador.
     -->
     <meta http-equiv="Content-Security-Policy" 
-        content="connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://us-central1-oficina-fg-motos.cloudfunctions.net https://www.gstatic.com https://unpkg.com https://www.googleapis.com;
+        content="connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.cloud.firestore.googleapis.com https://us-central1-oficina-fg-motos.cloudfunctions.net https://www.gstatic.com https://unpkg.com https://www.googleapis.com;
                  default-src 'self' https://www.gstatic.com; 
                  script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; 
                  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
