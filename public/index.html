@@ -119,16 +119,11 @@
     
     <!-- Script do aplicativo -->
     <script>
-        // Use os globais definidos no ambiente do Canvas (não remova)
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-        
-        if (firebaseConfig) {
-            firebase.initializeApp(firebaseConfig);
-        } else {
-            console.error("Firebase Config não está definida.");
-        }
+        // Foi removida a inicialização manual do Firebase daqui, pois o ambiente Canvas já a trata.
+        // As variáveis globais __firebase_config e __initial_auth_token agora são apenas referenciadas
+        // dentro do app.js.
     </script>
-    <script src="app.js"></script>
+    <!-- CORREÇÃO APLICADA: O caminho para o script foi corrigido de "app.js" para "js/app.js" -->
+    <script src="js/app.js"></script>
 </body>
 </html>
