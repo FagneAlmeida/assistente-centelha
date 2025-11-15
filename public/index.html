@@ -3,152 +3,393 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Centelha - Assistente da Oficina FG Motos</title>
-    <!--
-        CORREÇÃO FINAL APLICADA: Incluída a CSP mais robusta para Firebase/Firestore (adicionando *.cloud.firestore.googleapis.com)
-        e a diretiva img-src para evitar o bloqueio de imagens/GIFs do Google.
-    -->
-    <meta http-equiv="Content-Security-Policy" 
-        content="default-src 'self' https://www.gstatic.com; 
-             script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://unpkg.com https://www.gstatic.com; 
-             style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; 
-             font-src 'self' https://fonts.gstatic.com;
-             img-src 'self' https://www.gstatic.com https://www.google.com;
-             connect-src 'self' https://*.firebaseio.com wss://*.firebaseio.com https://*.cloud.firestore.googleapis.com https://us-central1-oficina-fg-motos.cloudfunctions.net https://www.googleapis.com https://www.gstatic.com https://unpkg.com;
-             frame-src 'self';
-             object-src 'none';
-             base-uri 'self';">
+    <title>Centelha - Assistente Virtual Inteligente</title>
+    <!-- 🛑 CORREÇÃO CRÍTICA DE ESTABILIDADE: Content Security Policy (CSP) ajustada -->
+    <!-- Adiciona wss (WebSocket) e domínios do Firebase para evitar erros de Refused to connect -->
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self'; 
+        script-src 'self' https://cdn.tailwindcss.com https://www.gstatic.com https://unpkg.com 'unsafe-inline' 'unsafe-eval'; 
+        style-src 'self' https://cdn.tailwindcss.com 'unsafe-inline'; 
+        font-src 'self' https://fonts.gstatic.com;
+        img-src 'self' data: https:;
+        connect-src 'self' https://* wss://* api.googleapis.com;
+        frame-src 'self' https://*.google.com;
+    ">
 
-    <!-- Tailwind CSS (loaded from CDN) -->
+    <!-- Tailwind CSS CDN para visualização rápida (Para produção, remover e usar build tool) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        /* Custom scrollbar for chat window */
-        .chat-window::-webkit-scrollbar { width: 8px; }
-        .chat-window::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-        .chat-window::-webkit-scrollbar-thumb:hover { background: #666; }
-        /* Typing indicator dots */
-        .typing-indicator span {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            margin: 0 2px;
-            background-color: #fca311;
-            border-radius: 50%;
-            opacity: 0;
-            animation: typing 1s infinite;
+        /* Estilos base para a interface */
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .chat-container { max-width: 768px; height: 90vh; }
+        .chat-messages { overflow-y: auto; scroll-behavior: smooth; }
+        .message-bubble { 
+            max-width: 80%; 
+            padding: 10px 14px; 
+            border-radius: 18px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
         }
-        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
-        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
-        @keyframes typing { 0%, 100% { opacity: 0; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
-        /* General button styling */
-        .chat-action-button {
-            display: inline-block;
-            padding: 8px 12px;
+        .user-bubble { background-color: #2563eb; color: white; border-bottom-right-radius: 4px; }
+        .assistant-bubble { background-color: #ffffff; color: #1f2937; border-bottom-left-radius: 4px; }
+        .chat-action-button { 
+            display: inline-block; 
+            padding: 6px 12px; 
+            border-radius: 9999px; /* Full rounded */
+            font-size: 0.875rem; 
+            font-weight: 600;
             margin-top: 8px;
-            border-radius: 12px;
-            font-size: 0.875rem; /* text-sm */
-            font-weight: 600; /* semibold */
-            box-shadow: 0 2px 4px rgba(0,0,0,0.15);
+            margin-right: 8px;
             transition: transform 0.1s;
         }
-        .chat-action-button:hover {
-            transform: scale(1.02);
-            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
-        }
+        .chat-action-button:hover { transform: scale(1.05); }
     </style>
 </head>
-<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
-
-    <!-- Chat Container -->
-    <div id="chat-container" class="w-full max-w-lg h-[90vh] bg-gray-800 rounded-2xl shadow-2xl flex flex-col overflow-hidden">
-        
+<body class="flex items-center justify-center min-h-screen p-4">
+    <div id="chat-container" class="chat-container w-full bg-white rounded-xl shadow-2xl flex flex-col">
         <!-- Header -->
-        <header class="p-4 bg-gray-700 text-white flex items-center justify-between">
-            <div class="flex items-center space-x-3">
-                <div class="w-8 h-8 flex items-center justify-center bg-yellow-500 rounded-full">
-                    <i data-lucide="zap" class="w-5 h-5 text-gray-900"></i>
-                </div>
-                <h1 class="text-xl font-bold">Centelha | FG Motos</h1>
-            </div>
-            <button id="new-chat-btn" class="text-sm text-gray-300 hover:text-white transition-colors flex items-center space-x-1 p-2 rounded-lg bg-gray-600 hover:bg-gray-500">
-                <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-                <span>Novo Chat</span>
-            </button>
+        <header class="p-4 border-b border-gray-200 bg-blue-600 rounded-t-xl text-white flex justify-between items-center">
+            <h1 class="text-xl font-bold">Centelha AI</h1>
+            <span id="user-id-display" class="text-sm font-mono bg-blue-700 py-1 px-3 rounded-full shadow-md">ID: Carregando...</span>
         </header>
 
-        <!-- Messages Window -->
-        <div id="chat-window" class="flex-grow p-4 space-y-4 overflow-y-auto chat-window">
-            <div id="chat-messages" class="flex flex-col space-y-4">
-                <!-- Messages will be injected here by app.js -->
+        <!-- Messages Area -->
+        <div id="chat-messages" class="chat-messages p-4 flex-grow space-y-3">
+            <!-- Messages will be rendered here -->
+            <div class="flex justify-center">
+                <div class="message-bubble assistant-bubble text-center text-gray-500">
+                    Olá! Eu sou a Centelha, seu assistente virtual. Como posso te ajudar hoje?
+                </div>
             </div>
         </div>
 
-        <!-- Quick Replies -->
-        <div id="quick-replies-container" class="p-3 flex flex-wrap gap-2 justify-start border-t border-gray-700">
-            <!-- Quick replies buttons will be injected here -->
+        <!-- Quick Replies Area -->
+        <div id="quick-replies" class="p-4 border-t border-gray-200 flex flex-wrap gap-2 min-h-[40px] bg-gray-50">
+            <!-- Quick replies will appear here -->
         </div>
 
         <!-- Input Area -->
-        <div class="p-4 border-t border-gray-700 flex space-x-3">
-            <input type="text" id="chat-input" placeholder="Digite sua mensagem..." class="flex-grow p-3 rounded-xl bg-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-yellow-500 transition-shadow" autocomplete="off">
-            <button id="send-btn" class="w-12 h-12 flex items-center justify-center rounded-full bg-gradient-to-br from-yellow-500 to-orange-600 text-white shadow-lg hover:from-yellow-400 hover:to-orange-500 transition-all disabled:opacity-50" disabled>
-                <i data-lucide="send" class="w-5 h-5"></i>
+        <div class="p-4 border-t border-gray-200 flex space-x-3 bg-gray-100 rounded-b-xl">
+            <input type="text" id="user-input" placeholder="Digite sua mensagem..." class="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 transition duration-150" autocomplete="off">
+            <button id="send-button" class="bg-blue-600 text-white p-3 rounded-lg shadow-md hover:bg-blue-700 disabled:opacity-50 transition duration-150 flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
             </button>
         </div>
     </div>
 
-    <!-- Confirmation Modal -->
-    <div id="confirmation-modal" class="fixed inset-0 z-50 bg-gray-900 bg-opacity-75 hidden items-center justify-center">
-        <div class="bg-gray-800 p-6 rounded-xl shadow-2xl max-w-sm w-full text-white">
-            <h3 class="text-lg font-bold mb-4">Confirmação</h3>
-            <p id="modal-text" class="mb-6"></p>
-            <div class="flex justify-end space-x-3">
-                <button id="cancel-btn" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 transition-colors">Cancelar</button>
-                <button id="confirm-btn" class="px-4 py-2 bg-red-600 rounded-lg hover:bg-red-500 transition-colors">Confirmar</button>
-            </div>
-        </div>
-    </div>
+    <!-- Firebase SDKs -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-functions.js";
 
-    <!-- Firebase SDKs (Compatível com v8.10.0) -->
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
-    
-    <!-- Script de Configuração e Inicialização do Firebase (CORRIGIDO) -->
-    <script>
-        // CORREÇÃO: Inicialização manual do Firebase App, necessária para o deploy no Netlify.
-        // *** ÚLTIMO PASSO CRÍTICO: SUBSTITUA AS CHAVES ABAIXO PELAS DE SEU PROJETO 'oficina-fg-motos' ***
-        const firebaseConfig = {
-            // ESTA CHAVE ESTÁ INVÁLIDA NO SEU DEPLOY! SUBSTITUA POR SUA CHAVE PÚBLICA REAL.
-            apiKey: "AIzaSyBYSzG5XKIvCa1iFVOjALdooVSf1HsyeJ8", 
-            authDomain: "centelha-e931b.firebaseapp.com",
-            projectId: "centelha-e931b", // Exemplo, confirme o seu ID real
-            storageBucket: "centelha-e931b.firebasestorage.app",
-            messagingSenderId: "639426563285",
-            appId: "1:639426563285:web:676bc24c3f32475478a65c"
+        // Variáveis globais de ambiente (MANDATÓRIAS)
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        // O Canvas fornece o URL base das Cloud Functions no firebaseConfig
+        const cloudFunctionsUrl = firebaseConfig.cloudFunctionsUrl || 'http://localhost:5001/seu-projeto/us-central1/';
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        let app, db, auth, functions;
+        let userId = null;
+        let isAuthReady = false;
+
+        const CHAT_ID = 'main_chat'; // ID fixo para o chat principal
+
+        // Estado global da aplicação
+        const appState = {
+            appId,
+            chatId: CHAT_ID,
+            userId: null,
+            isThinking: false,
+            unsubscribe: null, // Para listener do Firestore
+            conversationHistory: [], // Histórico de mensagens para a IA
+            renderedMessageIds: new Set(), // 🛑 CORREÇÃO CRÍTICA: Previne dupla renderização
         };
-        
-        // Verifica se a configuração é válida antes de inicializar
-        if (firebaseConfig.apiKey && firebaseConfig.projectId !== "SEU_PROJECT_ID") {
-            firebase.initializeApp(firebaseConfig);
-        } else if (typeof __firebase_config !== 'undefined') {
-             // Fallback para inicialização do ambiente Canvas (se houver)
-             try {
-                const config = JSON.parse(__firebase_config);
-                firebase.initializeApp(config);
-             } catch(e) {
-                console.error("Firebase Config global não pôde ser analisada.");
-             }
-        } else {
-            console.error("ERRO: O Firebase não foi inicializado. Por favor, preencha o firebaseConfig com suas chaves públicas.");
+
+        // Mapeamento de elementos do DOM
+        const elements = {
+            chatMessages: document.getElementById('chat-messages'),
+            userInput: document.getElementById('user-input'),
+            sendButton: document.getElementById('send-button'),
+            quickReplies: document.getElementById('quick-replies'),
+            userIdDisplay: document.getElementById('user-id-display'),
+        };
+
+        // --- Funções Auxiliares ---
+
+        function toggleThinking(state) {
+            appState.isThinking = state;
+            elements.sendButton.disabled = state;
+            elements.userInput.disabled = state;
+            elements.userInput.placeholder = state ? 'Centelha está pensando...' : 'Digite sua mensagem...';
+            elements.sendButton.classList.toggle('opacity-50', state);
         }
+
+        function scrollToBottom() {
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+        }
+
+        // 🧼 AJUSTE DE CLEAN CODE: Sanitização de Texto
+        function sanitizeText(text) {
+            // Previne XSS básico substituindo HTML tags
+            return text.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // 🧼 AJUSTE DE CLEAN CODE: Renderiza um botão de quick reply
+        function renderQuickReplies(replies = []) {
+            elements.quickReplies.innerHTML = '';
+            if (replies.length > 0) {
+                replies.forEach(reply => {
+                    const button = document.createElement('button');
+                    button.textContent = reply;
+                    button.className = 'chat-action-button bg-blue-500 hover:bg-blue-600 text-white';
+                    button.onclick = () => {
+                        elements.userInput.value = reply;
+                        sendMessage();
+                    };
+                    elements.quickReplies.appendChild(button);
+                });
+            }
+        }
+
+        // 🧼 AJUSTE DE CLEAN CODE: Adiciona mensagem à UI
+        function addMessageToUI(sender, text, messageId) {
+            if (appState.renderedMessageIds.has(messageId)) return; // 🛑 Prevenção de dupla renderização
+
+            const messageDiv = document.createElement('div');
+            const sanitizedText = sanitizeText(text);
+
+            const isUser = sender === 'user';
+            const bubbleClass = isUser ? 'user-bubble' : 'assistant-bubble';
+            const justifyClass = isUser ? 'justify-end' : 'justify-start';
+
+            // Regex para links e botões (ajustado para aceitar link e texto do botão)
+            const buttonRegex = /\[\[(.+?)\|(.+?)\]\]/g; 
+
+            // 🧼 AJUSTE DE SEGURANÇA: Validação de URL
+            let htmlText = sanitizedText
+                .replace(buttonRegex, (match, buttonText, url) => {
+                    const safeUrl = url.trim();
+                    // REGRA DE SEGURANÇA REFORÇADA: Apenas HTTPS (ou http://googleusercontent.com, se for o caso)
+                    if (safeUrl.startsWith('https://') || safeUrl.startsWith('http://googleusercontent.com')) {
+                        return `<a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="chat-action-button bg-gradient-to-br from-yellow-400 to-orange-500 text-white">${buttonText}</a>`;
+                    }
+                    console.warn('Tentativa de renderizar botão com URL inválida foi bloqueada:', safeUrl);
+                    return `[Botão com link inválido]`; // Evita a injeção
+                })
+                .replace(/\n/g, '<br>'); // Converte quebras de linha
+
+            messageDiv.className = `flex ${justifyClass}`;
+            messageDiv.innerHTML = `
+                <div id="msg-${messageId}" class="message-bubble ${bubbleClass}">
+                    ${htmlText}
+                </div>
+            `;
+            elements.chatMessages.appendChild(messageDiv);
+            appState.renderedMessageIds.add(messageId);
+            scrollToBottom();
+        }
+
+        // --- Lógica de Banco de Dados (Firestore) ---
+
+        // 🛑 CORREÇÃO CRÍTICA DE ESTABILIDADE: Otimização com docChanges (Delta Updates)
+        function listenToMessages() {
+            if (appState.unsubscribe) appState.unsubscribe(); // Cancela o listener anterior
+
+            // Coleção privada do usuário
+            const messagesColRef = collection(db, `artifacts/${appState.appId}/users/${appState.userId}/chats/${appState.chatId}/messages`);
+            const q = query(messagesColRef, orderBy("createdAt"));
+
+            appState.unsubscribe = onSnapshot(q, (snapshot) => {
+                let initialLoad = true;
+                if (snapshot.docChanges().length !== snapshot.size) {
+                    initialLoad = false;
+                }
+
+                // 🛑 Lógica para lidar com a primeira carga ou reset:
+                if (initialLoad) {
+                    elements.chatMessages.innerHTML = '';
+                    appState.renderedMessageIds.clear();
+                    appState.conversationHistory = [];
+                }
+
+                let lastQuickReplies = [];
+                let newMessages = false;
+                
+                snapshot.docChanges().forEach(change => {
+                    if (change.type === "added") {
+                        const doc = change.doc;
+                        const data = doc.data();
+                        const messageId = doc.id;
+                        
+                        // Ignora se já renderizado (prevenção de dupla renderização/concorrência)
+                        if (appState.renderedMessageIds.has(messageId)) return;
+                        
+                        let textForUI = data.text;
+                        let textForHistory = data.text; // Salva o texto bruto ou JSON para o histórico da IA
+                        
+                        if (data.sender === 'assistant') {
+                            try {
+                                const parsed = JSON.parse(data.text);
+                                textForUI = parsed.responseText || data.text;
+                                textForHistory = data.text; // Guarda o JSON para o histórico
+                                lastQuickReplies = parsed.quickReplies || [];
+                            } catch (e) { 
+                                // 🛑 FALHA PREVENTIVA: Se o JSON for inválido, salva o erro para análise e exibe o texto bruto
+                                console.error("Mensagem do Assistente não é um JSON válido:", data.text, e);
+                                textForUI = `[ERRO DE FORMATO - Contate o suporte] ${data.text}`;
+                                lastQuickReplies = [];
+                            }
+                        }
+                        
+                        // Adiciona ao histórico do estado e renderiza
+                        appState.conversationHistory.push({
+                            role: data.sender === 'user' ? 'user' : 'model',
+                            parts: [{ text: textForHistory }]
+                        });
+                        addMessageToUI(data.sender, textForUI, messageId);
+                        newMessages = true;
+                    }
+                });
+                
+                // 🧼 Lógica de Continuação e Quick Replies
+                if (newMessages) {
+                     const lastMessage = appState.conversationHistory[appState.conversationHistory.length - 1];
+                     // Apenas renderiza Quick Replies se a última mensagem for do modelo
+                     if (lastMessage && lastMessage.role === 'model') {
+                        toggleThinking(false);
+                        renderQuickReplies(lastQuickReplies); 
+                     }
+                }
+                
+            }, (error) => {
+                console.error("Erro ao ouvir mensagens (FATAL):", error);
+                addMessageToUI('assistant', 'Não foi possível carregar o histórico. Por favor, atualize a página.', 'error-load');
+                toggleThinking(false);
+            });
+        }
+
+        // --- Lógica de Negócios (Chama a Cloud Function) ---
+
+        async function handleConversation(userMessageText) {
+            toggleThinking(true);
+            renderQuickReplies([]);
+            
+            let messageDocRef;
+
+            try {
+                // 1. Salva a mensagem do usuário no Firestore (aciona o listener)
+                messageDocRef = await addDoc(collection(db, `artifacts/${appState.appId}/users/${appState.userId}/chats/${appState.chatId}/messages`), {
+                    sender: 'user',
+                    text: userMessageText,
+                    createdAt: Date.now(),
+                    userId: appState.userId,
+                });
+
+                // 2. ⚡️ CORREÇÃO CRÍTICA: Chama a Cloud Function para gerar a resposta da IA
+                const authToken = await auth.currentUser.getIdToken();
+                const conversationEndpoint = `${cloudFunctionsUrl}centelhaConversation`; // Usa a função 'centelhaConversation'
+
+                const response = await fetch(conversationEndpoint, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${authToken}` // Envia o token de autenticação
+                    },
+                    body: JSON.stringify({
+                        conversationHistory: appState.conversationHistory,
+                        userId: appState.userId,
+                        appId: appState.appId,
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.message || `Erro do Backend: ${response.status}`);
+                }
+                
+                // O Listener do Firestore (listenToMessages) cuidará de renderizar a resposta da Centelha.
+                
+            } catch (error) {
+                console.error("Erro ao processar a conversa:", error);
+                
+                // Remove a mensagem do usuário se a chamada ao backend falhar (opcional, mas limpa)
+                if (messageDocRef) {
+                    // Nota: O listener do Firestore já pode ter disparado, mas a remoção aqui limpa o Firestore.
+                    // deleteDoc(messageDocRef); 
+                }
+                
+                addMessageToUI('assistant', `Houve um erro no sistema da Centelha. Por favor, tente novamente. Detalhe: ${error.message}`, 'error-send');
+                toggleThinking(false);
+            }
+        }
+
+        // --- Inicialização e Eventos ---
+
+        function sendMessage() {
+            const text = elements.userInput.value.trim();
+            if (text && !appState.isThinking) {
+                handleConversation(text);
+                elements.userInput.value = '';
+            }
+        }
+
+        elements.sendButton.addEventListener('click', sendMessage);
+        elements.userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // --- Inicialização Firebase e Autenticação ---
+
+        async function initialize() {
+            try {
+                // 🛑 CORREÇÃO CRÍTICA: Prevenção de Falhas Futuras
+                if (!firebaseConfig.apiKey) {
+                    console.error("Firebase Config Inválida. Verifique __firebase_config.");
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                functions = getFunctions(app); // Inicializa Functions
+
+                onAuthStateChanged(auth, async (user) => {
+                    if (user) {
+                        appState.userId = user.uid;
+                        elements.userIdDisplay.textContent = `ID: ${user.uid.substring(0, 8)}...`;
+                        isAuthReady = true;
+                        
+                        // Inicia o listener de mensagens (só depois de autenticado)
+                        listenToMessages();
+                    } else {
+                         // 🐛 CORREÇÃO DE ERRO DE LOG: Remove a tentativa redundante de sign-in e o console.error.
+                         // O estado 'null' é esperado durante a inicialização antes do sign-in abaixo.
+                         console.log("Autenticação em andamento...");
+                    }
+                });
+
+                // Tenta autenticar com o token personalizado ou anonimamente
+                if (initialAuthToken) {
+                    await signInWithCustomToken(auth, initialAuthToken);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (e) {
+                console.error("Erro FATAL na inicialização do Firebase:", e);
+                addMessageToUI('assistant', 'Erro crítico ao iniciar o sistema. Verifique o console.', 'init-error');
+            }
+        }
+
+        initialize();
+
     </script>
-    
-    <!-- Script principal do aplicativo (Caminho corrigido) -->
-    <script src="js/app.js"></script>
 </body>
 </html>
